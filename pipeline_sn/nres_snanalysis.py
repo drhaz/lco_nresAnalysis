@@ -1,0 +1,125 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import dateutil.parser
+import glob
+import tarfile
+import tempfile
+import os
+import os.path
+import PyPDF2
+import re
+import shutil
+from astroquery.simbad import Simbad
+
+
+def readdata (fname):
+    " Read in a per night s/n dump"
+    data = np.genfromtxt (fname, unpack=True, dtype=None, 
+                          skip_footer=0, names=['star','vmag','sn','texp'])
+    sn60 = data['sn'] * np.sqrt (60. / data['texp'])
+    return data['star'], data['vmag'], sn60
+
+
+def snmodel (s0=180000, ron=5):
+    x = np.arange (2,13,0.5)
+    s = 10 ** (-0.4 * x) * s0
+    sn = s / np.sqrt (s + 3 * ron ** 2)
+    return x, sn
+
+    
+
+def plotfile (fname, color, label, refflux, ron=5, badcutoff=25000):
+    if (fname is not None):
+        if os.path.isfile(fname) and (os.path.getsize(fname) > 10) :
+            (star,v,sn) = readdata (fname)
+            plt.semilogy (v,sn,'o', color=color, label=label)
+        
+    if refflux > 0:    
+        (x,sn) = snmodel (refflux,ron)
+        plt.semilogy (x,sn, color=color, label='model %s' % label)
+
+objectTranslation = {
+    'PSIPHE' : 'psi Phe',
+    'MUCAS' : 'mu Cas',
+    'KS18C14487' :'TYC 8856-529-1'
+}
+
+def crawldata (site, nres, date, mountpoint='/nfs/archive/engineering', outputname = None):
+    """
+        Crawl through a nres calibrated files directory and 
+        (i) extract tar.gz, 
+        (ii) read pdf summary plot file and aprse target name, exposure time, s/n
+        (iii) query sinbad for v magnitude
+        (iv) write output to text file
+    """
+    
+    searchterm = '%s/%s/%s/%s/specproc/*.tar.gz' % (mountpoint, site, nres, date)
+    
+    starnames = []
+    starmags = []
+    starsns = []
+    starexptimes = []
+    
+    tgzs = glob.glob (searchterm)
+    for tgz in tgzs[0:]:
+        with tarfile.open (tgz) as tf:
+            bname = os.path.basename(tgz)[0:-7]
+            tmpdir=tempfile.mkdtemp()
+            tf.extractall (tmpdir)
+            tf.close
+        
+        with open ('%s/%s/%s.pdf' % (tmpdir, bname, bname), 'rb') as pdffile:
+            
+            # Read the text content from pdf file, deeply burried in the tar ball.
+            pdfreader = pdfreader = PyPDF2.PdfFileReader (pdffile)
+            text = pdfreader.getPage(0).extractText()
+            pdffile.close()
+            shutil.rmtree(tmpdir)
+            
+            # parse the output with an easy to read regex.
+            regex = '^([\w_\s\+-]+)\,\s.+expt\s?=\s?(\d+) s\,.+N=\s*(\d+\.\d+),'
+            m = re.search (regex, text)
+            if m is not None:
+                
+                starname = m.group(1)
+                exptime  = m.group(2)
+                sn       = m.group(3)
+            else:
+                print ("%s/%s pdf regex match failed" % (tmpdir, bname))
+                print ("Input:\n%s\n%s" % (text, regex))
+                continue
+    
+            # Query SIMBAD for the stellar magnitude
+            mag = 99
+            try:
+                customSimbad = Simbad()
+                customSimbad.add_votable_fields('flux(V)')
+                
+                
+                searchname = starname if '_' not in starname else starname[0:starname.find('_')]
+                if searchname in objectTranslation:
+                    searchname = objectTranslation[searchname]
+                print 'Searching for %s -> %s' % (starname, searchname)
+                result = customSimbad.query_object(searchname)
+                mag = result['FLUX_V'][0]  
+                mag = float(mag) 
+            except Exception as e:
+                print ("Query failed", e)
+                mag = 0
+                
+            # Log, and add everything to internal storge
+            starname = starname.replace (' ','_')
+            print bname, starname, mag, sn, exptime
+            starnames.append (starname)
+            starsns.append (sn)
+            starexptimes.append (exptime)
+            starmags.append (mag)      
+            
+    # And finally, write everything out to a text file for future use. 
+    
+    if outputname is None:
+        outputname = "%s-%s.txt" % (nres,date)
+    with open(outputname, "w+") as myfile:
+        for ii in range (len (starnames)):
+              myfile.write ('%s %s %s %s\n' %( starnames[ii], starmags[ii], starsns[ii], starexptimes[ii]) )  
+        
