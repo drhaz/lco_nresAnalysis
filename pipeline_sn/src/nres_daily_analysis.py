@@ -21,25 +21,25 @@ def initplotting ():
     plt.style.use('ggplot')
 
 
-def crawlSNbyInstrAndDates(instruments, dates, perdiemprefix):
+def crawlSNbyInstrAndDates(instruments, args):
     global site, instrument, date
     for site, instrument in instruments:
 
-        for date in (dates):
+        for date in (args.date):
             print
             site, instrument, date
-            nres.crawldata(site, instrument, date, perdiemprefix)
+            nres.crawldata(site, instrument, date, args.perdiem)
 
 
 
 
-def plot_bydayandinstrumnet(instruments, dates, args):
+def plot_bydayandinstrumnet(instruments, args):
     global site, instrument, date
     # Do the fancy plotting
     fig, ax = plt.subplots(1)
     for site, instrument in instruments:
 
-        for date in (dates):
+        for date in (args.date):
             print (args.perdiem, instrument, date)
             nres.plotfile('%s/%s-%s.txt' % (args.perdiem,instrument, date), color='red' if site == 'elp' else 'blue',
                           label='%s %s %s' % (site, instrument, date),
@@ -49,7 +49,7 @@ def plot_bydayandinstrumnet(instruments, dates, args):
     nres.plotfile(None, color='gray',  label='lsc nres01 pre-fl10', refflux=   500000, ron=args.ron)
     nres.plotfile(None, color='blue',  label='lsc nres01',          refflux=   180000, ron=args.ron)
     nres.plotfile(None, color='red',   label='elp nres02',          refflux=   900000, ron=args.ron)
-    nres.plotfile(None, color='green', label='NASA req',            refflux=  4180030, ron=0.001)
+    nres.plotfile(None, color='lightgreen', label='NASA req',       refflux=  4180030, ron=0.001)
     nres.plotfile(None, color='brown', label='NSF promise',         refflux= 10499761, ron=0.001)
 
     # prettyfication
@@ -66,6 +66,9 @@ def plot_bydayandinstrumnet(instruments, dates, args):
 
     if args.plotname is not None:
         plt.savefig(args.plotname, box_extra_artists=(lgd,), bbox_inches="tight");
+    else:
+        print ("Not plotting!")
+
 
 
 def parseCommandLine():
@@ -78,10 +81,12 @@ def parseCommandLine():
                         help='Set the debug level')
     parser.add_argument('--perdiems', dest='perdiem', default='../perdiem',
                         help='Directory containing photometryc databases')
-    parser.add_argument('--instruments', dest='instruments', nargs='+', choices=['nres01', 'nres02'],  help='sites code for camera')
-    parser.add_argument('--date', default='20171128', help='UTC start of night date')
+    parser.add_argument('--instruments', dest='instruments', nargs='+', default = "nres01 nres02",  choices=['nres01', 'nres02', 'nres03'],  help='sites code for camera')
+    parser.add_argument('--date', default='20171128', nargs= '+' , help='UTC start of night date')
     parser.add_argument('--plotname', default = 'NRESsn.png')
-    parser.add_argument('--ron', default = 5)
+    parser.add_argument('--ron', default = 0)
+    parser.add_argument('--crawl', action='store_true', help="Crawl through archive to extract S/N")
+    parser.add_argument('--plot', action='store_true', help="Plot S/N for time frame")
 
     args = parser.parse_args()
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
@@ -100,15 +105,22 @@ if __name__ == '__main__':
 
     args = parseCommandLine()
 
+    # process which instruemnts to parse
     myinstruments = []
     for (s,i) in instruments:
         if i in args.instruments:
             myinstruments.append([s,i])
 
-    #crawlSNbyInstrAndDates()
+    # process which dates to parse & print
+    if args.date is  None:
+        exit (1)
 
-    dates = ["20171128",]
-
-    initplotting()
-    #crawlSNbyInstrAndDates(myinstruments, dates, perdiemprefix)
-    plot_bydayandinstrumnet( myinstruments, dates, args)
+    if args.crawl:
+        print ("Crawling pipeline reports...")
+        crawlSNbyInstrAndDates(myinstruments,  args)
+        print ("Done.")
+    if args.plot:
+        print ("Plotting S/N summary")
+        initplotting()
+        plot_bydayandinstrumnet( myinstruments, args)
+        print ("Done")
