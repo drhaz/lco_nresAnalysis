@@ -33,6 +33,8 @@ def plotfile (fname, color, label, refflux, ron=5, badcutoff=25000):
         if  (os.path.getsize(fname) > 10) :
             (star,v,sn) = readdata (fname)
             plt.semilogy (v,sn,'o', color=color, label=label)
+            for (label, x, y) in zip(star,v,sn):
+                plt.annotate (label, xy=(x, y), fontsize=1)
         else:
             print ("Cannot use file " , fname, os.path.isfile(fname))
         

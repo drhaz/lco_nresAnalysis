@@ -74,7 +74,14 @@ def plot_bydayandinstrumnet(instruments, args):
     plt.subplots_adjust(top=0.88)
 
     if args.plotname is not None:
-        plt.savefig(args.plotname, box_extra_artists=(lgd,), bbox_inches="tight");
+        import cStringIO
+        from PIL import Image
+        ram = cStringIO.StringIO()
+        plt.savefig(ram, box_extra_artists=(lgd,), bbox_inches="tight", dpi=600);
+        ram.seek(0)
+        im = Image.open(ram)
+        im2 = im.convert('RGB').convert('P', palette=Image.ADAPTIVE)
+        im2.save( args.plotname , format='PNG')
     else:
         print ("Not plotting!")
 
