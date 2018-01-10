@@ -43,7 +43,8 @@ def plotfile (fname, color, label, refflux, ron=5, badcutoff=25000):
 objectTranslation = {
     'PSIPHE' : 'psi Phe',
     'MUCAS' : 'mu Cas',
-    'KS18C14487' :'TYC 8856-529-1'
+    'KS18C14487' :'TYC 8856-529-1',
+    'BD093070': 'BD-09 3070'
 }
 
 def crawldata (site, nres, date, perdiemprefix,  mountpoint='/nfs/archive/engineering', outputname = None):
@@ -90,7 +91,9 @@ def crawldata (site, nres, date, perdiemprefix,  mountpoint='/nfs/archive/engine
                 print ("%s/%s pdf regex match failed" % (tmpdir, bname))
                 print ("Input:\n%s\n%s" % (text, regex))
                 continue
-    
+            if starname.upper().endswith('_ENGR'):
+                print ('Rejecting star %s as it was observed as engineering test' % (starname))
+                continue   
             # Query SIMBAD for the stellar magnitude
             mag = 99
             try:

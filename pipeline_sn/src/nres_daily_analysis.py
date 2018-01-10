@@ -7,6 +7,8 @@ This is an umbrella script to crawkl through directories of nres reduced data. F
  A summary plot of exposure time normalized S/N vs. target magnitude is produced in the end as  success metric for observations.
 
 """
+import matplotlib
+matplotlib.use("Agg")
 import argparse
 
 import numpy as np
@@ -39,9 +41,16 @@ def plot_bydayandinstrumnet(instruments, args):
     fig, ax = plt.subplots(1)
     for site, instrument in instruments:
 
+        if site == 'elp':
+            color = 'red'
+        if site == 'lsc':
+            color = 'blue'
+        if site == 'cpt':
+            color = 'green'
+
         for date in (args.date):
             print (args.perdiem, instrument, date)
-            nres.plotfile('%s/%s-%s.txt' % (args.perdiem,instrument, date), color='red' if site == 'elp' else 'blue',
+            nres.plotfile('%s/%s-%s.txt' % (args.perdiem,instrument, date), color=color, 
                           label='%s %s %s' % (site, instrument, date),
                           refflux=0)
 
@@ -81,7 +90,7 @@ def parseCommandLine():
                         help='Set the debug level')
     parser.add_argument('--perdiems', dest='perdiem', default='../perdiem',
                         help='Directory containing photometryc databases')
-    parser.add_argument('--instruments', dest='instruments', nargs='+', default = "nres01 nres02",  choices=['nres01', 'nres02', 'nres03'],  help='sites code for camera')
+    parser.add_argument('--instruments', dest='instruments', nargs='+', default = "nres01 nres02 nres03",  choices=['nres01', 'nres02', 'nres03'],  help='sites code for camera')
     parser.add_argument('--date', default='20171128', nargs= '+' , help='UTC start of night date')
     parser.add_argument('--plotname', default = 'NRESsn.png')
     parser.add_argument('--ron', default = 0)
@@ -97,6 +106,7 @@ def parseCommandLine():
 instruments = [
     ('lsc', 'nres01'),
     ('elp', 'nres02'),
+    ('cpt', 'nres03')
 ]
 
 perdiemprefix = "../perdiem"
