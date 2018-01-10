@@ -22,7 +22,7 @@ def readdata (fname):
 
 def snmodel (s0=180000, ron=5):
     x = np.arange (2,13,0.5)
-    s = 10 ** (-0.4 * x) * s0
+    s = (10 ** (-0.4 * x)) * s0
     sn = s / np.sqrt (s + 3 * ron ** 2)
     return x, sn
 
@@ -30,9 +30,13 @@ def snmodel (s0=180000, ron=5):
 
 def plotfile (fname, color, label, refflux, ron=5, badcutoff=25000):
     if (fname is not None):
-        if os.path.isfile(fname) and (os.path.getsize(fname) > 10) :
+        if  (os.path.getsize(fname) > 10) :
             (star,v,sn) = readdata (fname)
             plt.semilogy (v,sn,'o', color=color, label=label)
+            for (label, x, y) in zip(star,v,sn):
+                plt.annotate (label, xy=(x, y), fontsize=1)
+        else:
+            print ("Cannot use file " , fname, os.path.isfile(fname))
         
     if refflux > 0:    
         (x,sn) = snmodel (refflux,ron)
@@ -41,10 +45,11 @@ def plotfile (fname, color, label, refflux, ron=5, badcutoff=25000):
 objectTranslation = {
     'PSIPHE' : 'psi Phe',
     'MUCAS' : 'mu Cas',
-    'KS18C14487' :'TYC 8856-529-1'
+    'KS18C14487' :'TYC 8856-529-1',
+    'BD093070': 'BD-09 3070'
 }
 
-def crawldata (site, nres, date, mountpoint='/nfs/archive/engineering', outputname = None):
+def crawldata (site, nres, date, perdiemprefix,  mountpoint='/nfs/archive/engineering', outputname = None):
     """
         Crawl through a nres calibrated files directory and 
         (i) extract tar.gz, 
@@ -88,7 +93,9 @@ def crawldata (site, nres, date, mountpoint='/nfs/archive/engineering', outputna
                 print ("%s/%s pdf regex match failed" % (tmpdir, bname))
                 print ("Input:\n%s\n%s" % (text, regex))
                 continue
-    
+            if starname.upper().endswith('_ENGR'):
+                print ('Rejecting star %s as it was observed as engineering test' % (starname))
+                continue   
             # Query SIMBAD for the stellar magnitude
             mag = 99
             try:
@@ -99,7 +106,7 @@ def crawldata (site, nres, date, mountpoint='/nfs/archive/engineering', outputna
                 searchname = starname if '_' not in starname else starname[0:starname.find('_')]
                 if searchname in objectTranslation:
                     searchname = objectTranslation[searchname]
-                print 'Searching for %s -> %s' % (starname, searchname)
+                print ('Searching for %s -> %s' % (starname, searchname))
                 result = customSimbad.query_object(searchname)
                 mag = result['FLUX_V'][0]  
                 mag = float(mag) 
@@ -109,7 +116,7 @@ def crawldata (site, nres, date, mountpoint='/nfs/archive/engineering', outputna
                 
             # Log, and add everything to internal storge
             starname = starname.replace (' ','_')
-            print bname, starname, mag, sn, exptime
+            print (bname, starname, mag, sn, exptime)
             starnames.append (starname)
             starsns.append (sn)
             starexptimes.append (exptime)
@@ -118,7 +125,7 @@ def crawldata (site, nres, date, mountpoint='/nfs/archive/engineering', outputna
     # And finally, write everything out to a text file for future use. 
     
     if outputname is None:
-        outputname = "%s-%s.txt" % (nres,date)
+        outputname = "%s/%s-%s.txt" % (perdiemprefix, nres,date)
     with open(outputname, "w+") as myfile:
         for ii in range (len (starnames)):
               myfile.write ('%s %s %s %s\n' %( starnames[ii], starmags[ii], starsns[ii], starexptimes[ii]) )  
