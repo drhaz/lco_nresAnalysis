@@ -29,7 +29,7 @@ def snmodel (s0=180000, ron=5):
     
 
 def plotfile (fname, color, label, refflux, ron=5, badcutoff=25000):
-    if (fname is not None):
+    if (fname is not None) and os.path.isfile(fname):
         if  (os.path.getsize(fname) > 10) :
             (star,v,sn) = readdata (fname)
             plt.semilogy (v,sn,'o', color=color, label=label)
