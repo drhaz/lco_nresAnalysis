@@ -93,9 +93,9 @@ def crawldata (site, nres, date, perdiemprefix,  mountpoint='/nfs/archive/engine
                 print ("%s/%s pdf regex match failed" % (tmpdir, bname))
                 print ("Input:\n%s\n%s" % (text, regex))
                 continue
-            if starname.upper().endswith('_ENGR'):
-                print ('Rejecting star %s as it was observed as engineering test' % (starname))
-                continue   
+            #if starname.upper().endswith('_ENGR'):
+            #    print ('Rejecting star %s as it was observed as engineering test' % (starname))
+            #    continue   
             # Query SIMBAD for the stellar magnitude
             mag = 99
             try:
