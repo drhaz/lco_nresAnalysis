@@ -67,19 +67,21 @@ def crawldata (site, nres, date, perdiemprefix,  mountpoint='/nfs/archive/engine
     
     tgzs = glob.glob (searchterm)
     for tgz in tgzs[0:]:
+
+        tmpdir=tempfile.mkdtemp()
+        
         with tarfile.open (tgz) as tf:
-            bname = os.path.basename(tgz)[0:-7]
-            tmpdir=tempfile.mkdtemp()
-            tf.extractall (tmpdir)
+            basename = os.path.basename(tgz)[0:-7]
+            tf.extract ('{basename}/{basename}.pdf'.format(basename=basename), path=tmpdir )
             tf.close
         
-        with open ('%s/%s/%s.pdf' % (tmpdir, bname, bname), 'rb') as pdffile:
+        with open (os.path.join( tmpdir , '{basename}/{basename}.pdf'.format(basename=basename)), 'rb') as pdffile:
             
             # Read the text content from pdf file, deeply burried in the tar ball.
             pdfreader = pdfreader = PyPDF2.PdfFileReader (pdffile)
             text = pdfreader.getPage(0).extractText()
             pdffile.close()
-            shutil.rmtree(tmpdir)
+            #shutil.rmtree(tmpdir)
             
             # parse the output with an easy to read regex.
             regex = '^([\w_\s\+-]+)\,\s.+expt\s?=\s?(\d+) s\,.+N=\s*(\d+\.\d+),'
@@ -90,7 +92,7 @@ def crawldata (site, nres, date, perdiemprefix,  mountpoint='/nfs/archive/engine
                 exptime  = m.group(2)
                 sn       = m.group(3)
             else:
-                print ("%s/%s pdf regex match failed" % (tmpdir, bname))
+                print ("%s/%s pdf regex match failed" % (tmpdir, basename))
                 print ("Input:\n%s\n%s" % (text, regex))
                 continue
             #if starname.upper().endswith('_ENGR'):
@@ -116,7 +118,7 @@ def crawldata (site, nres, date, perdiemprefix,  mountpoint='/nfs/archive/engine
                 
             # Log, and add everything to internal storge
             starname = starname.replace (' ','_')
-            print (bname, starname, mag, sn, exptime)
+            print (basename, starname, mag, sn, exptime)
             starnames.append (starname)
             starsns.append (sn)
             starexptimes.append (exptime)
