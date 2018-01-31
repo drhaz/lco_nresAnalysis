@@ -72,7 +72,7 @@ def plot_bydayandinstrumnet(instruments, args):
 
     # prettyfication
     lgd = plt.legend(bbox_to_anchor=(1, 1), loc='upper left', ncol=1, fontsize=15)
-    plt.xlim([1, 15])
+    plt.xlim([0, 15])
     plt.xlabel("\nV mag", fontsize=20)
     plt.ylabel("S/N\n", fontsize=20)
     plt.title("NRES S/N model\n per resolution element for 60 sec exposure, 5100 Ang\n", fontsize=20)

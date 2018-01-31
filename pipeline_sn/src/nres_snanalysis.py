@@ -21,7 +21,7 @@ def readdata (fname):
 
 
 def snmodel (s0=180000, ron=5):
-    x = np.arange (2,13,0.5)
+    x = np.arange (0,14,0.5)
     s = (10 ** (-0.4 * x)) * s0
     sn = s / np.sqrt (s + 3 * ron ** 2)
     return x, sn
