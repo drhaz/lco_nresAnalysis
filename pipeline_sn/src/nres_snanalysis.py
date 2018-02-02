@@ -15,9 +15,11 @@ from astroquery.simbad import Simbad
 def readdata (fname):
     " Read in a per night s/n dump"
     data = np.genfromtxt (fname, unpack=True, dtype=None, 
-                          skip_footer=0, names=['star','vmag','sn','texp'])
+                          skip_footer=0, names=['star','vmag','sn','texp'],)
+
     sn60 = data['sn'] * np.sqrt (60. / data['texp'])
-    return data['star'], data['vmag'], sn60
+    idx = np.isfinite(data['vmag'])
+    return data['star'][idx], data['vmag'][idx], sn60[idx]
 
 
 def snmodel (s0=180000, ron=5):
