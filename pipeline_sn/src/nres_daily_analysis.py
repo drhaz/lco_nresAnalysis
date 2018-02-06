@@ -11,33 +11,52 @@ import matplotlib
 matplotlib.use("Agg")
 import argparse
 
-import numpy as np
 import matplotlib.pyplot as plt
-import dateutil.parser
+import datetime as dt
 import nres_snanalysis as nres
 import logging
-import math
+
+
+# Known nres instruments and locations
+instruments = [
+    ('lsc', 'nres01'),
+    ('elp', 'nres02'),
+    ('cpt', 'nres03')
+]
 
 def initplotting ():
     plt.rcParams["figure.figsize"] = (10,6)
-    from matplotlib import style
     plt.style.use('ggplot')
 
 
 def crawlSNbyInstrAndDates(instruments, args):
-    global site, instrument, date
+    """
+    Wrapper funtion do call crawling S/N from PDF for a given night.
+
+    :param instruments:
+    :param args:
+    :return:
+    """
+
+    #global site, instrument, date
     for site, instrument in instruments:
 
         for date in (args.date):
-            print
-            site, instrument, date
+            print (site, instrument, date)
             nres.crawldata(site, instrument, date, args.perdiem)
 
 
 
 
 def plot_bydayandinstrumnet(instruments, args):
-    global site, instrument, date
+    """
+    Searches for buffered S/N data for range of date, instruments, and make a niceh S/N plot
+
+    :param instruments:
+    :param args:
+    :return:
+    """
+
     # Do the fancy plotting
     fig, ax = plt.subplots(1)
     for site, instrument in instruments:
@@ -50,8 +69,8 @@ def plot_bydayandinstrumnet(instruments, args):
             color = 'green'
 
         for date in (args.date):
-            print (args.perdiem, instrument, date)
-            nres.plotfile('%s/%s-%s.txt' % (args.perdiem,instrument, date), color=color, 
+
+            nres.plotfile('%s/%s-%s.txt' % (args.perdiem,instrument, date), color=color,
                           label='%s %s %s' % (site, instrument, date),
                           refflux=0)
 
@@ -100,6 +119,8 @@ def parseCommandLine():
     """ Read command line parameters
     """
 
+    todaydefault = dt.datetime.utcnow().date() - dt.timedelta( days = 1)
+    todaydefault = todaydefault.strftime("%Y%m%d")
     parser = argparse.ArgumentParser(
         description='Crawl NRES pipeline to measure throughput and acqusition efficiency.')
     parser.add_argument('--log_level', dest='log_level', default='INFO', choices=['DEBUG', 'INFO'],
@@ -107,7 +128,7 @@ def parseCommandLine():
     parser.add_argument('--perdiems', dest='perdiem', default='../perdiem',
                         help='Directory containing photometryc databases')
     parser.add_argument('--instruments', dest='instruments', nargs='+', default = "nres01 nres02 nres03",  choices=['nres01', 'nres02', 'nres03'],  help='sites code for camera')
-    parser.add_argument('--date', default='20171128', nargs= '+' , help='UTC start of night date')
+    parser.add_argument('--date', default=[todaydefault,], nargs= '+' , help='UTC start of night date')
     parser.add_argument('--plotname', default = 'NRESsn.png')
     parser.add_argument('--ron', default = 0)
     parser.add_argument('--crawl', action='store_true', help="Crawl through archive to extract S/N")
@@ -116,16 +137,12 @@ def parseCommandLine():
     args = parser.parse_args()
     logging.basicConfig(level=getattr(logging, args.log_level.upper()),
                         format='%(asctime)s.%(msecs).03d %(levelname)7s: %(module)20s: %(message)s')
+
     return args
 
 
-instruments = [
-    ('lsc', 'nres01'),
-    ('elp', 'nres02'),
-    ('cpt', 'nres03')
-]
 
-perdiemprefix = "../perdiem"
+
 
 if __name__ == '__main__':
 

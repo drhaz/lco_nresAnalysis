@@ -1,6 +1,7 @@
+import shutil
+
 import numpy as np
 import matplotlib.pyplot as plt
-import dateutil.parser
 import glob
 import tarfile
 import tempfile
@@ -8,9 +9,17 @@ import os
 import os.path
 import PyPDF2
 import re
-import shutil
 from astroquery.simbad import Simbad
 
+
+# An ugly way of dealing with unknown objects.
+
+objectTranslation = {
+    'PSIPHE' : 'psi Phe',
+    'MUCAS' : 'mu Cas',
+    'KS18C14487' :'TYC 8856-529-1',
+    'BD093070': 'BD-09 3070'
+}
 
 def readdata (fname):
     " Read in a per night s/n dump"
@@ -23,6 +32,12 @@ def readdata (fname):
 
 
 def snmodel (s0=180000, ron=5):
+    """
+    calculate a s/n model V mag vs S/N
+    :param s0:
+    :param ron:
+    :return:
+    """
     x = np.arange (0,14,0.5)
     s = (10 ** (-0.4 * x)) * s0
     sn = s / np.sqrt (s + 3 * ron ** 2)
@@ -31,6 +46,9 @@ def snmodel (s0=180000, ron=5):
     
 
 def plotfile (fname, color, label, refflux, ron=5, badcutoff=25000):
+    """
+    Plot all objects in a given txt file.
+    """
     if (fname is not None) and os.path.isfile(fname):
         if  (os.path.getsize(fname) > 10) :
             (star,v,sn) = readdata (fname)
@@ -44,12 +62,8 @@ def plotfile (fname, color, label, refflux, ron=5, badcutoff=25000):
         (x,sn) = snmodel (refflux,ron)
         plt.semilogy (x,sn, color=color, label='model %s' % label)
 
-objectTranslation = {
-    'PSIPHE' : 'psi Phe',
-    'MUCAS' : 'mu Cas',
-    'KS18C14487' :'TYC 8856-529-1',
-    'BD093070': 'BD-09 3070'
-}
+
+
 
 def crawldata (site, nres, date, perdiemprefix,  mountpoint='/nfs/archive/engineering', outputname = None):
     """
@@ -59,31 +73,33 @@ def crawldata (site, nres, date, perdiemprefix,  mountpoint='/nfs/archive/engine
         (iii) query sinbad for v magnitude
         (iv) write output to text file
     """
-    
+
+
     searchterm = '%s/%s/%s/%s/specproc/*.tar.gz' % (mountpoint, site, nres, date)
     
     starnames = []
     starmags = []
     starsns = []
     starexptimes = []
-    
+
     tgzs = glob.glob (searchterm)
     for tgz in tgzs[0:]:
-
+        # get the summary pdf out of the tar ball.
         tmpdir=tempfile.mkdtemp()
         
         with tarfile.open (tgz) as tf:
             basename = os.path.basename(tgz)[0:-7]
             tf.extract ('{basename}/{basename}.pdf'.format(basename=basename), path=tmpdir )
             tf.close
-        
+
+        # get the S/N out of the pdf file
         with open (os.path.join( tmpdir , '{basename}/{basename}.pdf'.format(basename=basename)), 'rb') as pdffile:
             
             # Read the text content from pdf file, deeply burried in the tar ball.
             pdfreader = pdfreader = PyPDF2.PdfFileReader (pdffile)
             text = pdfreader.getPage(0).extractText()
             pdffile.close()
-            #shutil.rmtree(tmpdir)
+            shutil.rmtree(tmpdir)
             
             # parse the output with an easy to read regex.
             regex = '^([\w_\s\+-]+)\,\s.+expt\s?=\s?(\d+) s\,.+N=\s*(\d+\.\d+),'
@@ -99,7 +115,9 @@ def crawldata (site, nres, date, perdiemprefix,  mountpoint='/nfs/archive/engine
                 continue
             #if starname.upper().endswith('_ENGR'):
             #    print ('Rejecting star %s as it was observed as engineering test' % (starname))
-            #    continue   
+            #    continue
+
+
             # Query SIMBAD for the stellar magnitude
             mag = 99
             try:
@@ -132,5 +150,4 @@ def crawldata (site, nres, date, perdiemprefix,  mountpoint='/nfs/archive/engine
         outputname = "%s/%s-%s.txt" % (perdiemprefix, nres,date)
     with open(outputname, "w+") as myfile:
         for ii in range (len (starnames)):
-              myfile.write ('%s %s %s %s\n' %( starnames[ii], starmags[ii], starsns[ii], starexptimes[ii]) )  
-        
+              myfile.write ('%s %s %s %s\n' %( starnames[ii], starmags[ii], starsns[ii], starexptimes[ii]) )
