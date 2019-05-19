@@ -52,6 +52,8 @@ def plotfile (fname, color, label, refflux, ron=5, badcutoff=25000):
     if (fname is not None) and os.path.isfile(fname):
         if  (os.path.getsize(fname) > 10) :
             (star,v,sn) = readdata (fname)
+            if 'nres03'  in fname:
+                sn *= 1.24
             plt.semilogy (v,sn,'o', color=color, label=label)
             for (label, x, y) in zip(star,v,sn):
                 plt.annotate (label, xy=(x, y), fontsize=1)

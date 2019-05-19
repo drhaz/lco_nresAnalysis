@@ -75,16 +75,17 @@ def plot_bydayandinstrumnet(instruments, args):
                           refflux=0)
 
     # Reference throughput
-    nres.plotfile(None, color='gray',  label='lsc nres01 pre-fl10',         refflux=    500000, ron=args.ron)
-    nres.plotfile(None, color='blue',  label='lsc nres01',                  refflux=    180000, ron=args.ron)
+    #nres.plotfile(None, color='gray',  label='lsc nres01 pre-fl10',         refflux=    500000, ron=args.ron)
+    nres.plotfile(None, color='blue',  label='lsc nres01',                  refflux=    600000, ron=args.ron)
     nres.plotfile(None, color='red',   label='elp nres02',                  refflux=    900000, ron=args.ron)
+    nres.plotfile(None, color='green', label='cpt nres03',                  refflux=    800000, ron=args.ron)
     # Assumption: S/N= 10 for 20 min on V=12 start (NSF proposal)
     # hence S/N (Texp=60, V=12) = 10 * sqrt (6.3) / sqrt (20) = 5.6,
-    nres.plotfile(None, color='green', label='NSF promise revised',         refflux=   1978682, ron=0.001)
+    #nres.plotfile(None, color='green', label='NSF promise revised',         refflux=   1978682, ron=0.001)
     #nres.plotfile(None, color='brown', label='NSF promise (wrong)',         refflux=  10499761, ron=0.001)
     # Trickier, worst case: S/N=100 to reach 3m/s for V=12 mag in 60 minutes
     # S/N (t=60 sec) = 100 /sqrt (60) = 12.9
-    nres.plotfile(None, color='cyan', label='TESS classification',          refflux=  995267, ron=0.001)
+    #nres.plotfile(None, color='cyan', label='TESS classification',          refflux=  995267, ron=0.001)
     # Trickier, worst case: S/N=100 to reach 3m/s for V=12 mag in 60 minutes
     # S/N (t=60 sec) = 0 /sqrt (60) = 12.9
     #nres.plotfile(None, color='cyan', label='S/N=100 1h V=12 3m/s',         refflux=  1682552, ron=0.001)
@@ -102,14 +103,14 @@ def plot_bydayandinstrumnet(instruments, args):
     plt.subplots_adjust(top=0.88)
 
     if args.plotname is not None:
-        import cStringIO
-        from PIL import Image
-        ram = cStringIO.StringIO()
-        plt.savefig(ram, box_extra_artists=(lgd,), bbox_inches="tight", dpi=400);
-        ram.seek(0)
-        im = Image.open(ram)
-        im2 = im.convert('RGB').convert('P', palette=Image.ADAPTIVE)
-        im2.save( args.plotname , format='PNG')
+        #from io import StringIO
+        #from PIL import Image
+        #ram = StringIO()
+        plt.savefig(args.plotname, box_extra_artists=(lgd,), bbox_inches="tight", dpi=200);
+        # ram.seek(0)
+        # im = Image.open(ram)
+        # im2 = im.convert('RGB').convert('P', palette=Image.ADAPTIVE)
+        # im2.save( args.plotname , format='PNG')
     else:
         print ("Not plotting!")
 
